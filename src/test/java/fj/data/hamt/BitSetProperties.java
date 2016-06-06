@@ -2,12 +2,14 @@ package fj.data.hamt;
 
 import fj.Equal;
 import fj.data.List;
+import fj.data.test.PropertyAssert;
 import fj.function.Booleans;
 import fj.test.Arbitrary;
 import fj.test.Gen;
 import fj.test.Property;
 import fj.test.reflect.CheckParams;
 import fj.test.runner.PropertyTestRunner;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static fj.data.hamt.BitSet.fromLong;
@@ -21,6 +23,8 @@ import static fj.test.Property.implies;
 import static fj.test.Property.prop;
 import static fj.test.Property.property;
 import static java.lang.System.out;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 /**
  * Created by maperr on 31/05/2016.
@@ -29,6 +33,8 @@ import static java.lang.System.out;
 @RunWith(PropertyTestRunner.class)
 @CheckParams(maxSize = 10000)
 public class BitSetProperties {
+
+
 
 
     Property longRoundTrip() {
@@ -40,35 +46,28 @@ public class BitSetProperties {
     }
 
     Property generalEmptiness() {
-        return property(arbList(arbBoolean), list ->
+        return property(arbListBoolean, list ->
                 prop(list.dropWhile(Booleans.not).isEmpty() == BitSet.fromList(list).isEmpty())
         );
     }
 
+    Arbitrary<List<Boolean>> arbListBoolean = arbitrary(Gen.choose(0, BitSet.BITS).bind(i -> Gen.sequenceN(i, arbBoolean.gen)));
+
     Property toList() {
-        Arbitrary<List<Boolean>> alb = arbitrary(Gen.choose(0, BitSet.BITS).bind(i -> Gen.sequenceN(i, arbBoolean.gen)));
+        Arbitrary<List<Boolean>> alb = arbListBoolean;
         return property(alb, list -> {
-//            int n = list.length();
+            int n = list.length();
+            out.println("list size: " + n);
             List<Boolean> list1 = list.dropWhile(Booleans.not);
-            List<Boolean> list2 = BitSet.fromList(list).toList();
+//            int n2 = list1.length();
+            BitSet bs1 = BitSet.fromList(list);
+            long l = bs1.longValue();
+            out.println("value: " + l);
+            List<Boolean> list2 = bs1.toList();
+
             boolean b = Equal.listEqual(Equal.booleanEqual).eq(list1, list2);
             return prop(b);
         });
-
-//        Gen.choose(0, 100);
-//        return property(arbList(arbBoolean), list -> {
-//            return implies(list.length() < Long.SIZE, () -> {
-//                List<Boolean> list1 = list.dropWhile(b -> !b);
-//                List<Boolean> list2 = BitSet.fromList(list).toList();
-//                boolean b = Equal.listEqual(Equal.booleanEqual).eq(list1, list2);
-//                if (!b) {
-//                    out.println(list.length());
-//                    int z = 0;
-//                }
-//
-//                return prop(b);
-//            });
-//        });
     }
 
     Property isSet() {
@@ -85,6 +84,6 @@ public class BitSetProperties {
 
     static final Arbitrary<Long> arbNonNegativeLong = arbitrary(arbLong.gen.map(l -> l < 0 ? -l : l));
 
-    static final Arbitrary<Long> arbBoundedLong = arbitrary(Gen.choose(0, 1000).map(i -> i.longValue()));
+    static final Arbitrary<Long> arbBoundedLong = arbitrary(Gen.choose(0, Long.MAX_VALUE).map(i -> i.longValue()));
 
 }

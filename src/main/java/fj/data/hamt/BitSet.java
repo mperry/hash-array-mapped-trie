@@ -35,6 +35,10 @@ public class BitSet {
 
     // most significant bit first [1, 1, 0] = 6
     public static BitSet fromList(List<Boolean> list) {
+        int n = Long.SIZE;
+        if (list.length() > n) {
+            throw new IllegalArgumentException("Does not support lists greater than " + n + " bits");
+        }
         long result = 0;
         for (Boolean b: list) {
             result = (result << 1) | toInt(b);
@@ -91,25 +95,33 @@ public class BitSet {
     }
 
     public int bitsUsed() {
-        return toReverseStream().length();
+        return toStream().length();
     }
 
     public Stream<Boolean> toStream() {
 
 //        Stream.nil()
-        return toReverseStream().reverse();
+        return Stream.fromString(Long.toBinaryString(value)).map(c -> toBoolean(c)).dropWhile(b -> !b);
+//        return toReverseStream().reverse();
     }
 
     public String asString() {
-        return toStream().foldLeft((acc, b) -> acc + toChar(b), "");
+        return Long.toBinaryString(value);
+//        return toStream().foldLeft((acc, b) -> acc + toChar(b), "");
     }
 
     public String toString() {
-        return "BitSet(" + asString() + ")";
+        return "BitSet(" +
+                asString()
+//                "?"
+                + ")";
     }
 
     public Stream<Boolean> toReverseStream() {
-        return value == 0 ? Stream.nil() : Stream.cons(isSet(0), () -> shiftRight(1).toReverseStream());
+
+//        Stream.fromString(Long.toBinaryString(value)).map(c -> toBoolean(c));
+//        return value == 0 ? Stream.single(false) : Stream.cons(isSet(0), () -> shiftRight(1).toReverseStream());
+        return toStream().reverse();
     }
 
     public List<Boolean> toReverseList() {
@@ -118,15 +130,15 @@ public class BitSet {
     }
 
     public List<Boolean> toList() {
-        return toReverseStream().toList().reverse();
+        return toStream().toList();
     }
 
     public <A> A foldRight(F2<Boolean, A, A> f, A acc) {
-        return toReverseStream().foldLeft(F2Functions.flip(f), acc);
+        return toStream().foldRight(b -> p -> f.f(b, p._1()), acc);
     }
 
     public <A> A foldLeft(A acc, F2<A, Boolean, A> f) {
-        return toReverseStream().foldRight((b, la) -> f.f(la._1(), b), acc);
+        return toStream().foldLeft((a, b) -> f.f(a, b), acc);
     }
 
     public BitSet xor(BitSet bs) {
