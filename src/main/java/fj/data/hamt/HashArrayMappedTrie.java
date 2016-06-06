@@ -14,7 +14,10 @@ import fj.data.Stream;
  */
 public class HashArrayMappedTrie<K, V> {
 
-    Seq<Option<SeqNode<K, V>>> seq;
+//    Seq<Option<SeqNode<K, V>>> seq;
+    Seq<SeqNode<K, V>> seq2;
+    BitSet bitSet = BitSet.fromLong(0);
+
     Hash<K> hash;
     Equal<K> equal;
 
@@ -23,20 +26,22 @@ public class HashArrayMappedTrie<K, V> {
     public static final int MIN_INDEX = 0;
     public static final int MAX_INDEX = SIZE - 1;
 
-    private HashArrayMappedTrie(Seq<Option<SeqNode<K, V>>> s, Equal<K> e, Hash<K> h) {
-        seq = s;
+    private HashArrayMappedTrie(BitSet bs, Seq<SeqNode<K, V>> s, Equal<K> e, Hash<K> h) {
+//    private HashArrayMappedTrie(Seq<Option<SeqNode<K, V>>> s, Equal<K> e, Hash<K> h) {
+        bitSet = bs;
+        seq2 = s;
         hash = h;
         equal = e;
     }
 
     public static <K, V> HashArrayMappedTrie<K, V> empty(Equal<K> e, Hash<K> h) {
-        Array<Option<SeqNode<K, V>>> a = Array.range(MIN_INDEX, MAX_INDEX + 1).map(i -> Option.none());
-        Seq<Option<SeqNode<K, V>>> s = Seq.seq(a.toJavaArray());
-        return new HashArrayMappedTrie<>(s, e, h);
+//        Array<Option<SeqNode<K, V>>> a = Array.range(MIN_INDEX, MAX_INDEX + 1).map(i -> Option.none());
+//        Seq<Option<SeqNode<K, V>>> s = Seq.seq(a.toJavaArray());
+        return new HashArrayMappedTrie<>(BitSet.empty(), Seq.empty(), e, h);
     }
 
-    public static <K, V> HashArrayMappedTrie<K, V> hamt(Seq<Option<SeqNode<K, V>>> s, Equal<K> e, Hash<K> h) {
-        return new HashArrayMappedTrie<>(s, e, h);
+    public static <K, V> HashArrayMappedTrie<K, V> hamt(BitSet bs, Seq<SeqNode<K, V>> s, Equal<K> e, Hash<K> h) {
+        return new HashArrayMappedTrie<>(bs, s, e, h);
     }
 
     public Option<V> find(K k) {
@@ -46,18 +51,21 @@ public class HashArrayMappedTrie<K, V> {
     public Option<V> find(K k, int lowIndex, int highIndex) {
 
         int bits = bitsBetween(hash.hash(k), lowIndex, highIndex);
-        Option<SeqNode<K, V>> o = seq.index(bits);
-        if (o.isNone()) {
+
+        // look up a 32 bit bitmap
+        int seqIndex = bitSet.bitsToRight(bits);
+        if (seqIndex >= seq2.length()) {
             return Option.none();
-        } else {
-            SeqNode<K, V> sn = o.some();
-            return sn.find(n -> {
-                boolean b = equal.eq(n.getKey(), k);
-                return b ? Option.some(n.getValue()) : Option.none();
-            }, hamt -> {
-                return hamt.find(k, lowIndex + BITS_IN_INDEX, highIndex + BITS_IN_INDEX);
-            });
         }
+        SeqNode<K, V> sn2 = seq2.index(seqIndex);
+        return sn2.find(n -> {
+            boolean b = equal.eq(n.getKey(), k);
+            return b ? Option.some(n.getValue()) : Option.none();
+        }, hamt -> {
+            return hamt.find(k, lowIndex + BITS_IN_INDEX, highIndex + BITS_IN_INDEX);
+        });
+
+
     }
 
     public HashArrayMappedTrie<K, V> set(K k, V v) {
@@ -70,14 +78,16 @@ public class HashArrayMappedTrie<K, V> {
 
     public HashArrayMappedTrie<K, V> set(K k, V v, int lowIndex, int highIndex) {
 
-        int bits = bitsBetween(hash.hash(k), lowIndex, highIndex);
-        Option<SeqNode<K, V>> o = seq.index(bits);
-        if (o.isNone()) {
-            SimpleNode<K, V> sn = SimpleNode.simpleNode(k, v);
-            return hamt(seq.update(bits, Option.some(SeqNode.seqNode(sn))), equal, hash);
+        int bsIndex = bitsBetween(hash.hash(k), lowIndex, highIndex);
+
+        if (!bitSet.isSet(bsIndex)) {
+            // append new node
+            SeqNode<K, V> sn1 = SeqNode.seqNode(SimpleNode.simpleNode(k, v));
+            return HashArrayMappedTrie.hamt(bitSet.set(bsIndex), SeqUtil.insert(seq2, bsIndex, sn1), equal, hash);
         } else {
-            SeqNode<K, V> sn = o.some();
-            SeqNode<K, V> match = sn.match(n -> {
+            int index = bitSet.bitsToRight(bsIndex);
+            SeqNode<K, V> sn2 = seq2.index(index);
+            SeqNode<K, V> match2 = sn2.match(n -> {
                 boolean b = equal.eq(n.getKey(), k);
                 if (b) {
                     return SeqNode.seqNode(SimpleNode.simpleNode(k, v));
@@ -92,9 +102,12 @@ public class HashArrayMappedTrie<K, V> {
                 return kvSeqNode;
 //                return null;
             });
-            return hamt(seq.update(bits, Option.some(match)), equal, hash);
+            // return
+            // TODO
+            return hamt(bitSet, seq2.update(index, match2), equal, hash);
 
         }
+
 
     }
 
@@ -104,11 +117,15 @@ public class HashArrayMappedTrie<K, V> {
     }
 
     public Stream<P2<K, V>> toStream() {
-        return SeqUtil.filter(seq, o -> o.isSome()).toStream().bind(o -> o.some().toStream());
+        return seq2.toStream().bind(sn -> sn.toStream());
     }
 
     public String toString() {
-        return "HashArrayMappedTrie(" + seq.toString() + ")";
+        return "HashArrayMappedTrie(" + bitSet.toString() + ", " + seq2.toString() + ")";
+    }
+
+    public int length() {
+        return seq2.foldLeft((acc, sn) -> sn.match(sn2 -> acc + 1, hamt -> acc + hamt.length()), 0);
     }
 
 }

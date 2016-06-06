@@ -72,7 +72,7 @@ public class BitSetProperties {
 
     Property isSet() {
         return property(arbBoundedLong, arbitrary(Gen.choose(0, BitSet.BITS)),
-                (Long l, Integer i) -> prop(fromLong(l).isSet(i) == ((l & (1 << i)) != 0))
+                (Long l, Integer i) -> prop(fromLong(l).isSet(i) == ((l & (1L << i)) != 0))
         );
     }
 

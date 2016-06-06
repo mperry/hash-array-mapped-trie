@@ -10,6 +10,8 @@ import org.junit.Test;
 
 import static fj.P.p;
 import static java.lang.System.out;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 /**
  * Created by maperr on 3/06/2016.
@@ -23,12 +25,17 @@ public class HamtTest {
 
     @Test
     public void testEmpty() {
-        out.println(empty().toString());
+        HashArrayMappedTrie<Integer, Integer> h = empty();
+
+        out.println(h.toString());
+        assertThat(h.length(), equalTo(0));
     }
 
     @Test
     public void one() {
-        out.println(empty().set(3, 6));
+        HashArrayMappedTrie<Integer, Integer> h = empty().set(3, 6);
+        out.println(h);
+        assertThat(h.length(), equalTo(1));
     }
 
     @Test
@@ -39,17 +46,20 @@ public class HamtTest {
         out.println(h1);
         out.println(h2);
         out.println(h3);
+        assertThat(h3.length(), equalTo(1));
     }
 
     @Test
     public void subtrie() {
+        List<P2<Integer, Integer>> list = List.list(p(0, 1), p(31, 1), p(32, 1), p(33, 1));
         HashArrayMappedTrie<Integer, Integer> h = empty();
-        HashArrayMappedTrie<Integer, Integer> h2 = h.set(List.list(p(0, 1), p(31, 1), p(32, 1), p(33, 1)));
+        HashArrayMappedTrie<Integer, Integer> h2 = h.set(list);
         out.println(h);
         out.println(h2);
 
         Stream<P2<Integer, Integer>> s = h2.toStream();
         out.println(s.toList());
+        assertThat(h2.length(), equalTo(list.length()));
     }
 
 }

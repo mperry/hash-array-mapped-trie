@@ -8,6 +8,9 @@ import fj.data.Stream;
 
 /**
  * Created by maperr on 31/05/2016.
+ *
+ * BitSet("1011") represents the number 11 and has indices [3, 0] inclusive where the lowest index
+ * is the rightmost bit
  */
 public class BitSet {
 
@@ -55,7 +58,7 @@ public class BitSet {
     }
 
     public boolean isSet(int index) {
-        return (value & (1 << index)) != 0;
+        return (value & (1L << index)) != 0;
     }
 
     public boolean isEmpty() {
@@ -63,7 +66,7 @@ public class BitSet {
     }
 
     public BitSet set(int index) {
-        return fromLong(value | (1 << index));
+        return fromLong(value | (1L << index));
     }
 
     public BitSet set(int index, boolean b) {
@@ -71,7 +74,8 @@ public class BitSet {
     }
 
     public BitSet clear(int index) {
-        return and(fromLong(1 << index).not());
+        // TODO, this looks wrong, need xor
+        return and(fromLong(1L << index).not());
     }
 
     public long longValue() {
@@ -115,6 +119,21 @@ public class BitSet {
                 asString()
 //                "?"
                 + ")";
+    }
+
+    public int bitsToRight(int index) {
+        //  fromString("10101111").bitsRoRight(2)= 2
+        int pos = index - 1;
+        long mask = 1 << (pos);
+        int result = 0;
+        while (pos >= 0) {
+            if ((mask & value) != 0) {
+                result++;
+            }
+            mask = mask >> 1;
+            pos--;
+        }
+        return result;
     }
 
     public Stream<Boolean> toReverseStream() {
