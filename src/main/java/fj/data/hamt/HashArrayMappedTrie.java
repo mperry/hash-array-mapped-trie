@@ -86,10 +86,7 @@ public final class HashArrayMappedTrie<K, V> {
                             .set(n.getKey(), n.getValue(), lowIndex + BITS_IN_INDEX, highIndex + BITS_IN_INDEX);
                     return Node.hamtNode(hamt);
                 }
-            }, hamt -> {
-                final Node<K, V> kvNode = Node.hamtNode(hamt.set(k, v, lowIndex + BITS_IN_INDEX, highIndex + BITS_IN_INDEX));
-                return kvNode;
-            });
+            }, hamt -> Node.hamtNode(hamt.set(k, v, lowIndex + BITS_IN_INDEX, highIndex + BITS_IN_INDEX)));
             return hamt(bitSet, seq.update(index, newNode), equal, hash);
         }
     }
