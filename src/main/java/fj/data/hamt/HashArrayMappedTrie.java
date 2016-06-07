@@ -8,6 +8,7 @@ import fj.data.Option;
 import fj.data.Seq;
 import fj.data.Stream;
 
+import static fj.P.p;
 import static fj.data.Option.none;
 import static fj.data.Option.some;
 
@@ -53,8 +54,8 @@ public final class HashArrayMappedTrie<K, V> {
             return none();
         } else {
             return seq.index(seqIndex).find(n -> {
-                final boolean b = equal.eq(n.getKey(), k);
-                return b ? some(n.getValue()) : none();
+                final boolean b = equal.eq(n._1(), k);
+                return b ? some(n._2()) : none();
             }, hamt -> hamt.find(k, lowIndex + BITS_IN_INDEX, highIndex + BITS_IN_INDEX));
         }
     }
@@ -70,20 +71,20 @@ public final class HashArrayMappedTrie<K, V> {
     public HashArrayMappedTrie<K, V> set(final K k, V v, final int lowIndex, final int highIndex) {
         final int bsIndex = bitsBetween(hash.hash(k), lowIndex, highIndex);
         if (!bitSet.isSet(bsIndex)) {
-            // append new simpleNodeNode
-            final Node<K, V> sn1 = Node.simpleNodeNode(SimpleNode.simpleNode(k, v));
+            // append new p2Node
+            final Node<K, V> sn1 = Node.p2Node(p(k, v));
             return HashArrayMappedTrie.hamt(bitSet.set(bsIndex), SeqUtil.insert(seq, bsIndex, sn1), equal, hash);
         } else {
             final int index = bitSet.bitsToRight(bsIndex);
             final Node<K, V> oldNode = seq.index(index);
             final Node<K, V> newNode = oldNode.match(n -> {
-                final boolean b = equal.eq(n.getKey(), k);
+                final boolean b = equal.eq(n._1(), k);
                 if (b) {
-                    return Node.simpleNodeNode(SimpleNode.simpleNode(k, v));
+                    return Node.p2Node(p(k, v));
                 } else {
                     final HashArrayMappedTrie<K, V> hamt = HashArrayMappedTrie.<K, V>empty(equal, hash)
                             .set(k, v, lowIndex + BITS_IN_INDEX, highIndex + BITS_IN_INDEX)
-                            .set(n.getKey(), n.getValue(), lowIndex + BITS_IN_INDEX, highIndex + BITS_IN_INDEX);
+                            .set(n._1(), n._2(), lowIndex + BITS_IN_INDEX, highIndex + BITS_IN_INDEX);
                     return Node.hamtNode(hamt);
                 }
             }, hamt -> Node.hamtNode(hamt.set(k, v, lowIndex + BITS_IN_INDEX, highIndex + BITS_IN_INDEX)));
@@ -92,7 +93,7 @@ public final class HashArrayMappedTrie<K, V> {
     }
 
     // bits between low (inclusive) and high (exclusive)
-    public static int bitsBetween(int n, int low, int high) {
+    public static int bitsBetween(final int n, final int low, final int high) {
         return (int) BitSet.fromLong(n).range(high, low).longValue();
     }
 

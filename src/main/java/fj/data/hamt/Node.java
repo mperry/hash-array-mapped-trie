@@ -12,13 +12,13 @@ import fj.data.Stream;
  */
 public final class Node<K, V> {
 
-    private final Either<SimpleNode<K, V>, HashArrayMappedTrie<K, V>> either;
+    private final Either<P2<K, V>, HashArrayMappedTrie<K, V>> either;
 
-    public Node(final Either<SimpleNode<K, V>, HashArrayMappedTrie<K, V>> e) {
+    public Node(final Either<P2<K, V>, HashArrayMappedTrie<K, V>> e) {
         either = e;
     }
 
-    public Node(final SimpleNode<K, V> simpleNode) {
+    public Node(final P2<K, V> simpleNode) {
         this(Either.left(simpleNode));
     }
 
@@ -26,24 +26,24 @@ public final class Node<K, V> {
         this(Either.right(hamt));
     }
 
-    public static <K, V> Node<K, V> simpleNodeNode(final SimpleNode<K, V> sn) {
-        return new Node<>(sn);
+    public static <K, V> Node<K, V> p2Node(final P2<K, V> p) {
+        return new Node<>(p);
     }
 
     public static <K, V> Node<K, V> hamtNode(final HashArrayMappedTrie<K, V> hamt) {
         return new Node<>(hamt);
     }
 
-    public Option<V> find(final F<SimpleNode<K, V>, Option<V>> f, final F<HashArrayMappedTrie<K, V>, Option<V>> g) {
-        return match(sn -> f.f(sn), hamt -> g.f(hamt));
+    public Option<V> find(final F<P2<K, V>, Option<V>> f, final F<HashArrayMappedTrie<K, V>, Option<V>> g) {
+        return match(p -> f.f(p), hamt -> g.f(hamt));
     }
 
-    public <B> B match(F<SimpleNode<K, V>, B> f, F<HashArrayMappedTrie<K, V>, B> g) {
-        return either.either(sn -> f.f(sn), hamt -> g.f(hamt));
+    public <B> B match(final F<P2<K, V>, B> f, final F<HashArrayMappedTrie<K, V>, B> g) {
+        return either.either(p -> f.f(p), hamt -> g.f(hamt));
     }
 
     public Stream<P2<K, V>> toStream() {
-        return match(sn -> Stream.single(P.p(sn.getKey(), sn.getValue())), h -> h.toStream());
+        return match(p -> Stream.single(p), h -> h.toStream());
     }
 
     public String toString() {
