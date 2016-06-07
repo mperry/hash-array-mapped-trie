@@ -6,8 +6,9 @@ import fj.P2;
 /**
  * Created by maperr on 31/05/2016.
  */
-public class SimpleNode<K, V> {
-    P2<K, V> pair;
+public final class SimpleNode<K, V> {
+
+    private final P2<K, V> pair;
 
     private SimpleNode(K k, V v) {
         pair = P.p(k, v);
@@ -25,8 +26,8 @@ public class SimpleNode<K, V> {
         return pair._2();
     }
 
-
     public String toString() {
         return "SimpleNode" + pair.toString() + "";
     }
+
 }

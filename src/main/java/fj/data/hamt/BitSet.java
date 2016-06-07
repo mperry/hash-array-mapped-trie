@@ -103,22 +103,15 @@ public class BitSet {
     }
 
     public Stream<Boolean> toStream() {
-
-//        Stream.nil()
         return Stream.fromString(Long.toBinaryString(value)).map(c -> toBoolean(c)).dropWhile(b -> !b);
-//        return toReverseStream().reverse();
     }
 
     public String asString() {
         return Long.toBinaryString(value);
-//        return toStream().foldLeft((acc, b) -> acc + toChar(b), "");
     }
 
     public String toString() {
-        return "BitSet(" +
-                asString()
-//                "?"
-                + ")";
+        return "BitSet(" + asString() + ")";
     }
 
     public int bitsToRight(int index) {
@@ -137,15 +130,11 @@ public class BitSet {
     }
 
     public Stream<Boolean> toReverseStream() {
-
-//        Stream.fromString(Long.toBinaryString(value)).map(c -> toBoolean(c));
-//        return value == 0 ? Stream.single(false) : Stream.cons(isSet(0), () -> shiftRight(1).toReverseStream());
         return toStream().reverse();
     }
 
     public List<Boolean> toReverseList() {
         return toReverseStream().toList();
-//        return value == 0 ? List.nil() : List.cons(isSet(0), shiftRight(1).toReverseList());
     }
 
     public List<Boolean> toList() {
